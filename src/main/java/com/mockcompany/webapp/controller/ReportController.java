@@ -2,6 +2,8 @@ package com.mockcompany.webapp.controller;
 
 import com.mockcompany.webapp.api.SearchReportResponse;
 import com.mockcompany.webapp.model.ProductItem;
+import com.mockcompany.webapp.service.SearchService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.*;
 
 /**
  * Management decided it is super important that we have lots of products that match the following terms.
@@ -28,13 +31,16 @@ public class ReportController {
      */
     private final EntityManager entityManager;
 
+    private final SearchService searchService;
+
     /**
      * TODO: Declare the SearchService similar to EntityManager and add as a constructor argument
      */
 
     @Autowired
-    public ReportController(EntityManager entityManager) {
+    public ReportController(EntityManager entityManager, SearchService searchService) {
         this.entityManager = entityManager;
+        this.searchService = searchService;
     }
 
 
@@ -45,7 +51,7 @@ public class ReportController {
         Map<String, Integer> hits = new HashMap<>();
         SearchReportResponse response = new SearchReportResponse();
         response.setSearchTermHits(hits);
-
+        /*
         int count = this.entityManager.createQuery("SELECT item FROM ProductItem item").getResultList().size();
 
         List<Number> matchingIds = new ArrayList<>();
@@ -61,6 +67,17 @@ public class ReportController {
         matchingIds.addAll(
                 this.entityManager.createQuery("SELECT item.id from ProductItem item where item.description like '%cool%'").getResultList()
         );
+        */
+
+        Collection<ProductItem> allProductItems = this.searchService.search("");
+        int count = allProductItems.size();
+
+        Collection<ProductItem> coolProductItems = this.searchService.search("cool");
+        List<Number> matchingIds = new ArrayList<>();
+        for (ProductItem productItem : coolProductItems) {
+            matchingIds.add(productItem.getId());
+        }
+
         List<Number> counted = new ArrayList<>();
         for (Number id: matchingIds) {
             if (!counted.contains(id)) {
@@ -73,7 +90,8 @@ public class ReportController {
 
         response.setProductCount(count);
 
-        List<ProductItem> allItems = entityManager.createQuery("SELECT item FROM ProductItem item").getResultList();
+        //List<ProductItem> allItems = entityManager.createQuery("SELECT item FROM ProductItem item").getResultList();
+        Collection<ProductItem> allItems = allProductItems;
         int kidCount = 0;
         int perfectCount = 0;
         Pattern kidPattern = Pattern.compile("(.*)[kK][iI][dD][sS](.*)");
